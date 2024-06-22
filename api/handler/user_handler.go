@@ -7,18 +7,15 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/segmentio/kafka-go"
 )
 
 type UserHandler struct {
-	kafkaWriter *kafka.Writer
-	db          *pgx.Conn
+	db *pgx.Conn
 }
 
-func NewUserHandler(kafkaWriter *kafka.Writer, db *pgx.Conn) *UserHandler {
+func NewUserHandler(db *pgx.Conn) *UserHandler {
 	return &UserHandler{
-		kafkaWriter: kafkaWriter,
-		db:          db,
+		db: db,
 	}
 }
 

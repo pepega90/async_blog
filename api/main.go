@@ -14,14 +14,19 @@ import (
 func main() {
 	r := mux.NewRouter()
 
+	// kafka
 	kafkaWriter := utils.ConnectKafka()
 	defer kafkaWriter.Close()
+
+	// rabbitmq
+	rabbitMqConnect := utils.ConnectRabbitMQ()
+	defer rabbitMqConnect.Close()
 
 	db := utils.ConnectDB()
 	defer db.Close(context.Background())
 
-	userHandler := handler.NewUserHandler(kafkaWriter, db)
-	postHandler := handler.NewPostHandler(kafkaWriter)
+	userHandler := handler.NewUserHandler(db)
+	postHandler := handler.NewPostHandler(kafkaWriter, rabbitMqConnect)
 
 	r.HandleFunc("/users", userHandler.CreateUserHandler).Methods(http.MethodPost)
 	r.HandleFunc("/posts", postHandler.CreatePost).Methods(http.MethodPost)

@@ -6,16 +6,19 @@ import (
 	"go_msg_broker/utils"
 	"net/http"
 
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/segmentio/kafka-go"
 )
 
 type PostHandler struct {
 	kafkaWriter *kafka.Writer
+	rabbitMqPub *amqp.Channel
 }
 
-func NewPostHandler(kafkaWriter *kafka.Writer) *PostHandler {
+func NewPostHandler(kafkaWriter *kafka.Writer, rabbitMqPub *amqp.Channel) *PostHandler {
 	return &PostHandler{
 		kafkaWriter: kafkaWriter,
+		rabbitMqPub: rabbitMqPub,
 	}
 }
 
@@ -27,16 +30,37 @@ func (p *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// publish post to kafka
+	// msg, err := json.Marshal(req)
+	// if err != nil {
+	// 	utils.ResponsWithError(w, http.StatusInternalServerError, err.Error())
+	// 	return
+	// }
+	// err = p.kafkaWriter.WriteMessages(r.Context(), kafka.Message{
+	// 	Key:   []byte("create_post"),
+	// 	Value: msg,
+	// })
+
+	// publish post to rabbitmq
 	msg, err := json.Marshal(req)
 	if err != nil {
 		utils.ResponsWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	err = p.kafkaWriter.WriteMessages(r.Context(), kafka.Message{
-		Key:   []byte("create_post"),
-		Value: msg,
-	})
+	err = p.rabbitMqPub.Publish(
+		"",
+		"create_post",
+		false,
+		false,
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        msg,
+		},
+	)
+	if err != nil {
+		utils.ResponsWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	if err != nil {
 		utils.ResponsWithError(w, http.StatusInternalServerError, err.Error())
