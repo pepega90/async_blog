@@ -14,6 +14,4 @@ go run main.go
 ```
 
 # TODO
-for now is only kafka, i will add rabbitmq and nats
-* RabbitMQ
 * NATS
