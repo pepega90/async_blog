@@ -6,6 +6,7 @@ import (
 	"go_msg_broker/utils"
 	"net/http"
 
+	"github.com/nats-io/nats.go"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/segmentio/kafka-go"
 )
@@ -13,12 +14,14 @@ import (
 type PostHandler struct {
 	kafkaWriter *kafka.Writer
 	rabbitMqPub *amqp.Channel
+	natsPub     *nats.Conn
 }
 
-func NewPostHandler(kafkaWriter *kafka.Writer, rabbitMqPub *amqp.Channel) *PostHandler {
+func NewPostHandler(kafkaWriter *kafka.Writer, rabbitMqPub *amqp.Channel, natsConnect *nats.Conn) *PostHandler {
 	return &PostHandler{
 		kafkaWriter: kafkaWriter,
 		rabbitMqPub: rabbitMqPub,
+		natsPub:     natsConnect,
 	}
 }
 
@@ -29,39 +32,36 @@ func (p *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// publish post to kafka
-	// msg, err := json.Marshal(req)
-	// if err != nil {
-	// 	utils.ResponsWithError(w, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-	// err = p.kafkaWriter.WriteMessages(r.Context(), kafka.Message{
-	// 	Key:   []byte("create_post"),
-	// 	Value: msg,
-	// })
-
-	// publish post to rabbitmq
 	msg, err := json.Marshal(req)
 	if err != nil {
 		utils.ResponsWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	err = p.rabbitMqPub.Publish(
-		"",
-		"create_post",
-		false,
-		false,
-		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        msg,
-		},
-	)
-	if err != nil {
-		utils.ResponsWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	// publish post to kafka
+	// err = p.kafkaWriter.WriteMessages(r.Context(), kafka.Message{
+	// 	Key:   []byte("create_post"),
+	// 	Value: msg,
+	// })
 
+	// publish post to rabbitmq
+	// err = p.rabbitMqPub.Publish(
+	// 	"",
+	// 	"create_post",
+	// 	false,
+	// 	false,
+	// 	amqp.Publishing{
+	// 		ContentType: "application/json",
+	// 		Body:        msg,
+	// 	},
+	// )
+	// if err != nil {
+	// 	utils.ResponsWithError(w, http.StatusInternalServerError, err.Error())
+	// 	return
+	// }
+
+	// publish post to NATS
+	err = p.natsPub.Publish("create_post", msg)
 	if err != nil {
 		utils.ResponsWithError(w, http.StatusInternalServerError, err.Error())
 		return
