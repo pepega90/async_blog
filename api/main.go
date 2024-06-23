@@ -19,14 +19,18 @@ func main() {
 	defer kafkaWriter.Close()
 
 	// rabbitmq
-	rabbitMqConnect := utils.ConnectRabbitMQ()
-	defer rabbitMqConnect.Close()
+	// rabbitMqConnect := utils.ConnectRabbitMQ()
+	// defer rabbitMqConnect.Close()
+
+	// nats
+	natsConnect := utils.ConnectNATS()
+	defer natsConnect.Close()
 
 	db := utils.ConnectDB()
 	defer db.Close(context.Background())
 
 	userHandler := handler.NewUserHandler(db)
-	postHandler := handler.NewPostHandler(kafkaWriter, rabbitMqConnect)
+	postHandler := handler.NewPostHandler(kafkaWriter, nil, natsConnect)
 
 	r.HandleFunc("/users", userHandler.CreateUserHandler).Methods(http.MethodPost)
 	r.HandleFunc("/posts", postHandler.CreatePost).Methods(http.MethodPost)
