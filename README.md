@@ -12,6 +12,3 @@ go run main.go
 cd consumer
 go run main.go
 ```
-
-# TODO
-* NATS
